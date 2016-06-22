@@ -119,12 +119,7 @@ fn main() {
         glium::texture::UncompressedFloatFormat::U8,
         glium::texture::MipmapsOption::NoMipmap
     ).unwrap();
-    let mut text: String = "A japanese poem:\r
-\r
-色は匂へど散りぬるを我が世誰ぞ常ならむ有為の奥山今日越えて浅き夢見じ酔ひもせず\r
-\r
-Feel free to type out some text, and delete it with Backspace. You can also try resizing this window."
-        .into();
+    let mut text = "Feel free to type out some text:".to_string();
     'main: loop {
         let (width, dpi_factor) = {
             let window = display.get_window().unwrap();
