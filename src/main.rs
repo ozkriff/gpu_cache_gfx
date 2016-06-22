@@ -22,10 +22,12 @@ struct Vertex {
 
 implement_vertex!(Vertex, position, tex_coords, colour);
 
-fn layout_paragraph<'a>(font: &'a Font,
-                        scale: Scale,
-                        width: u32,
-                        text: &str) -> Vec<PositionedGlyph<'a>> {
+fn layout_paragraph<'a>(
+    font: &'a Font,
+    scale: Scale,
+    width: u32,
+    text: &str,
+) -> Vec<PositionedGlyph<'a>> {
     use unicode_normalization::UnicodeNormalization;
     let mut result = Vec::new();
     let v_metrics = font.v_metrics(scale);
@@ -69,51 +71,43 @@ fn layout_paragraph<'a>(font: &'a Font,
 fn main() {
     let font_data = include_bytes!("Arial Unicode.ttf");
     let font = FontCollection::from_bytes(font_data as &[u8]).into_font().unwrap();
-
     let display = glutin::WindowBuilder::new()
         .with_vsync()
         .with_dimensions(512, 512)
         .with_title("RustType GPU cache example")
         .build_glium()
         .unwrap();
-
     let dpi_factor = display.get_window().unwrap().hidpi_factor();
-
     let (cache_width, cache_height) = (512 * dpi_factor as u32, 512 * dpi_factor as u32);
     let mut cache = Cache::new(cache_width, cache_height, 0.1, 0.1);
-
     let program = program!(
         &display,
         140 => {
             vertex: "
                 #version 140
-
                 in vec2 position;
                 in vec2 tex_coords;
                 in vec4 colour;
-
                 out vec2 v_tex_coords;
                 out vec4 v_colour;
-
                 void main() {
                     gl_Position = vec4(position, 0.0, 1.0);
                     v_tex_coords = tex_coords;
                     v_colour = colour;
                 }
             ",
-
             fragment: "
                 #version 140
                 uniform sampler2D tex;
                 in vec2 v_tex_coords;
                 in vec4 v_colour;
                 out vec4 f_colour;
-
                 void main() {
                     f_colour = v_colour * vec4(1.0, 1.0, 1.0, texture(tex, v_tex_coords).r);
                 }
             "
-        }).unwrap();
+        }
+    ).unwrap();
     let cache_tex = glium::texture::Texture2d::with_format(
         &display,
         glium::texture::RawImage2d {
@@ -123,7 +117,8 @@ fn main() {
             format: glium::texture::ClientFormat::U8
         },
         glium::texture::UncompressedFloatFormat::U8,
-        glium::texture::MipmapsOption::NoMipmap).unwrap();
+        glium::texture::MipmapsOption::NoMipmap
+    ).unwrap();
     let mut text: String = "A japanese poem:\r
 \r
 色は匂へど散りぬるを我が世誰ぞ常ならむ有為の奥山今日越えて浅き夢見じ酔ひもせず\r
@@ -140,6 +135,7 @@ Feel free to type out some text, and delete it with Backspace. You can also try 
             cache.queue_glyph(0, glyph.clone());
         }
         cache.cache_queued(|rect, data| {
+            // TODO: gfx: encoder.update_texture
             cache_tex.main_level().write(glium::Rect {
                 left: rect.min.x,
                 bottom: rect.min.y,
@@ -152,11 +148,9 @@ Feel free to type out some text, and delete it with Backspace. You can also try 
                 format: glium::texture::ClientFormat::U8
             });
         }).unwrap();
-
         let uniforms = uniform! {
             tex: cache_tex.sampled().magnify_filter(glium::uniforms::MagnifySamplerFilter::Nearest)
         };
-
         let vertex_buffer = {
             let colour = [0.0, 0.0, 0.0, 1.0];
             let (screen_width, screen_height) = {
@@ -167,65 +161,61 @@ Feel free to type out some text, and delete it with Backspace. You can also try 
             let vertices: Vec<Vertex> = glyphs.iter().flat_map(|g| {
                 if let Ok(Some((uv_rect, screen_rect))) = cache.rect_for(0, g) {
                     let gl_rect = Rect {
-                        min: origin
-                            + (vector(screen_rect.min.x as f32 / screen_width - 0.5,
-                                      1.0 - screen_rect.min.y as f32 / screen_height - 0.5)) * 2.0,
-                        max: origin
-                            + (vector(screen_rect.max.x as f32 / screen_width - 0.5,
-                                      1.0 - screen_rect.max.y as f32 / screen_height - 0.5)) * 2.0
+                        min: origin + (vector(screen_rect.min.x as f32 / screen_width - 0.5,
+                            1.0 - screen_rect.min.y as f32 / screen_height - 0.5)) * 2.0,
+                        max: origin + (vector(screen_rect.max.x as f32 / screen_width - 0.5,
+                            1.0 - screen_rect.max.y as f32 / screen_height - 0.5)) * 2.0,
                     };
                     arrayvec::ArrayVec::<[Vertex; 6]>::from([
                         Vertex {
                             position: [gl_rect.min.x, gl_rect.max.y],
                             tex_coords: [uv_rect.min.x, uv_rect.max.y],
-                            colour: colour
+                            colour: colour,
                         },
                         Vertex {
                             position: [gl_rect.min.x,  gl_rect.min.y],
                             tex_coords: [uv_rect.min.x, uv_rect.min.y],
-                            colour: colour
+                            colour: colour,
                         },
                         Vertex {
                             position: [gl_rect.max.x,  gl_rect.min.y],
                             tex_coords: [uv_rect.max.x, uv_rect.min.y],
-                            colour: colour
+                            colour: colour,
                         },
                         Vertex {
                             position: [gl_rect.max.x,  gl_rect.min.y],
                             tex_coords: [uv_rect.max.x, uv_rect.min.y],
-                            colour: colour },
+                            colour: colour,
+                        },
                         Vertex {
                             position: [gl_rect.max.x, gl_rect.max.y],
                             tex_coords: [uv_rect.max.x, uv_rect.max.y],
-                            colour: colour
+                            colour: colour,
                         },
                         Vertex {
                             position: [gl_rect.min.x, gl_rect.max.y],
                             tex_coords: [uv_rect.min.x, uv_rect.max.y],
-                            colour: colour
-                        }])
+                            colour: colour,
+                        },
+                    ])
                 } else {
                     arrayvec::ArrayVec::new()
                 }
             }).collect();
-
-            glium::VertexBuffer::new(
-                &display,
-                &vertices).unwrap()
+            glium::VertexBuffer::new(&display, &vertices).unwrap()
         };
-
         let mut target = display.draw();
         target.clear_color(1.0, 1.0, 1.0, 0.0);
-        target.draw(&vertex_buffer,
-                    glium::index::NoIndices(glium::index::PrimitiveType::TrianglesList),
-                    &program, &uniforms,
-                    &glium::DrawParameters {
-                        blend: glium::Blend::alpha_blending(),
-                        ..Default::default()
-                    }).unwrap();
-
+        target.draw(
+            &vertex_buffer,
+            glium::index::NoIndices(glium::index::PrimitiveType::TrianglesList),
+            &program, &uniforms,
+            &glium::DrawParameters {
+                blend: glium::Blend::alpha_blending(),
+                ..Default::default()
+            },
+        ).unwrap();
         target.finish().unwrap();
-
         for event in display.poll_events() {
             match event {
                 glutin::Event::KeyboardInput(_, _, Some(glutin::VirtualKeyCode::Escape)) |
