@@ -243,3 +243,5 @@ Feel free to type out some text, and delete it with Backspace. You can also try 
         }
     }
 }
+
+// vim: set tabstop=4 shiftwidth=4 softtabstop=4 expandtab:
