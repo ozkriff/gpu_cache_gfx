@@ -13,6 +13,15 @@ use rusttype::Rect;
 
 use std::borrow::Cow;
 
+#[derive(Copy, Clone)]
+struct Vertex {
+    position: [f32; 2],
+    tex_coords: [f32; 2],
+    colour: [f32; 4]
+}
+
+implement_vertex!(Vertex, position, tex_coords, colour);
+
 fn layout_paragraph<'a>(font: &'a Font,
                         scale: Scale,
                         width: u32,
@@ -149,14 +158,6 @@ Feel free to type out some text, and delete it with Backspace. You can also try 
         };
 
         let vertex_buffer = {
-            #[derive(Copy, Clone)]
-            struct Vertex {
-                position: [f32; 2],
-                tex_coords: [f32; 2],
-                colour: [f32; 4]
-            }
-
-            implement_vertex!(Vertex, position, tex_coords, colour);
             let colour = [0.0, 0.0, 0.0, 1.0];
             let (screen_width, screen_height) = {
                 let (w, h) = display.get_framebuffer_dimensions();
