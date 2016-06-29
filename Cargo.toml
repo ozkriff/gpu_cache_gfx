@@ -5,6 +5,9 @@ authors = ["Andrey Lesnikov <ozkriff@gmail.com>"]
 
 [dependencies]
 rusttype = "*"
-arrayvec = "*"
-glium = "*"
 unicode-normalization = "*"
+glutin = "*"
+gfx = "*"
+gfx_core = "*"
+gfx_device_gl = "*"
+gfx_window_glutin = "*"
