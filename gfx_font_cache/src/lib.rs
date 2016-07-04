@@ -9,17 +9,34 @@ use unicode_normalization::{UnicodeNormalization};
 use rusttype::{
     // FontCollection,
     Font,
-    // Rect,
+    Rect,
     Scale,
     PositionedGlyph,
+    Point,
     point,
-    // vector,
+    vector,
 };
-use rusttype::gpu_cache::{Cache};
+// use rusttype::gpu_cache::{self, Cache};
 // use glutin::{Api, Event, VirtualKeyCode, GlRequest};
 // use gfx::{tex, Device, Factory, Resources};
 // use gfx::traits::{FactoryExt};
 // use gfx::handle::{Texture};
+
+pub fn pixel_to_gl_point(w: f32, h: f32, screen_point: Point<i32>) -> Point<f32> {
+    // TODO: simplify with cgmath
+    let v = vector(
+        screen_point.x as f32 / w - 0.5,
+        1.0 - screen_point.y as f32 / h - 0.5,
+    );
+    point(0.0, 0.0) + v * 2.0
+}
+
+pub fn pixel_to_gl_rect(w: f32, h: f32, screen_rect: Rect<i32>) -> Rect<f32> {
+    Rect {
+        min: pixel_to_gl_point(w, h, screen_rect.min),
+        max: pixel_to_gl_point(w, h, screen_rect.max),
+    }
+}
 
 pub fn layout_paragraph<'a>(
     font: &'a Font,

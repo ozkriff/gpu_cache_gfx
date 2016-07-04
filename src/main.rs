@@ -5,11 +5,11 @@ extern crate gfx_device_gl;
 extern crate rusttype;
 extern crate gfx_font_cache;
 
-use rusttype::{FontCollection, Font, Point, Rect, Scale, point, vector, gpu_cache};
+use rusttype::{FontCollection, Font, Rect, Scale, gpu_cache};
 use glutin::{Api, Event, VirtualKeyCode, GlRequest};
 use gfx::{tex, Device, Factory};
 use gfx::traits::{FactoryExt};
-use gfx_font_cache::{layout_paragraph};
+use gfx_font_cache::{layout_paragraph, pixel_to_gl_rect};
 
 pub type ColorFormat = gfx::format::Srgba8;
 pub type DepthFormat = gfx::format::DepthStencil;
@@ -26,22 +26,6 @@ gfx_pipeline!( pipe {
     texture: gfx::TextureSampler<[f32; 4]> = "t_Tex",
     out: gfx::BlendTarget<ColorFormat> = ("Target0", gfx::state::MASK_ALL, gfx::preset::blend::ALPHA),
 });
-
-fn pixel_to_gl_point(w: f32, h: f32, screen_point: Point<i32>) -> Point<f32> {
-    // TODO: simplify with cgmath
-    let v = vector(
-        screen_point.x as f32 / w - 0.5,
-        1.0 - screen_point.y as f32 / h - 0.5,
-    );
-    point(0.0, 0.0) + v * 2.0
-}
-
-fn pixel_to_gl_rect(w: f32, h: f32, screen_rect: Rect<i32>) -> Rect<f32> {
-    Rect {
-        min: pixel_to_gl_point(w, h, screen_rect.min),
-        max: pixel_to_gl_point(w, h, screen_rect.max),
-    }
-}
 
 // что я хочу? функцию, в которую я передаю текст, а она возвращает массив с uv и pos геометрией
 // (text: &text) -> Vec<([f32; 2], [f32; 2])> {}
