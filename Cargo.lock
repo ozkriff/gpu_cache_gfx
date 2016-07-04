@@ -5,10 +5,10 @@ dependencies = [
  "gfx 0.12.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "gfx_core 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "gfx_device_gl 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "gfx_font_cache 0.1.0",
  "gfx_window_glutin 0.12.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "glutin 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "rusttype 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "unicode-normalization 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -173,6 +173,19 @@ dependencies = [
  "gfx_core 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "gfx_gl 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.3.6 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "gfx_font_cache"
+version = "0.1.0"
+dependencies = [
+ "gfx 0.12.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "gfx_core 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "gfx_device_gl 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "gfx_window_glutin 0.12.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "glutin 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rusttype 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "unicode-normalization 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]

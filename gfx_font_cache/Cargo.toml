@@ -1,13 +1,15 @@
 [package]
-name = "gpu_cache_gfx"
+name = "gfx_font_cache" # TODO: rename
 version = "0.1.0"
 authors = ["Andrey Lesnikov <ozkriff@gmail.com>"]
 
 [dependencies]
 rusttype = "*"
-glutin = "*"
+unicode-normalization = "*"
 gfx = "*"
 gfx_core = "*"
-gfx_device_gl = "*"
 gfx_window_glutin = "*"
-gfx_font_cache = { version = "*", path = "./gfx_font_cache" }
+
+# TODO: remove this
+gfx_device_gl = "*"
+glutin = "*"
