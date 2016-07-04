@@ -84,6 +84,8 @@ impl<R: gfx::Resources> GfxFontCache<R> {
         encoder.update_texture::<SurfaceFormat, FullFormat>(cache_tex, None, info, &new_data).unwrap();
     }
 
+    // TODO: плохо, весь этот класс не должен ничего знать про Vertex!
+    // ...но и еще одного лишнего копирования хотелось бы избежать.
     fn yyy<C: gfx::CommandBuffer<R>>(
         &mut self,
         font: &Font,
@@ -97,7 +99,6 @@ impl<R: gfx::Resources> GfxFontCache<R> {
     ) -> (Vec<Vertex>, Vec<u16>) {
         let mut vertex_data: Vec<Vertex> = Vec::new();
         let mut index_data: Vec<u16> = Vec::new();
-
         let glyphs = layout_paragraph(font, font_scale, iw, text);
         for glyph in &glyphs {
             self.cache.queue_glyph(0, glyph.clone());
@@ -105,7 +106,6 @@ impl<R: gfx::Resources> GfxFontCache<R> {
         self.cache.cache_queued(|r, d| {
             GfxFontCache::xxx(encoder, r, d, cache_tex);
         }).unwrap();
-
         let mut i = 0;
         for g in &glyphs {
             let (uv, screen_rect) = match self.cache.rect_for(0, g) {
@@ -120,7 +120,6 @@ impl<R: gfx::Resources> GfxFontCache<R> {
             index_data.extend_from_slice(&[i, i + 1, i + 2, i, i + 2, i + 3]);
             i += 4;
         }
-
         (vertex_data, index_data)
     }
 }
