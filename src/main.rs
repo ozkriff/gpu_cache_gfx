@@ -139,7 +139,7 @@ fn main() {
         .with_gl(gl_version);
     let (window, mut device, mut factory, main_color, _main_depth) =
         gfx_window_glutin::init::<ColorFormat, DepthFormat>(builder);
-    let mut encoder: gfx::Encoder<_, _> = factory.create_command_buffer().into();
+    let mut encoder = factory.create_command_buffer().into();
     let clear_color = [1.0, 1.0, 1.0, 1.0];
     let sampler = factory.create_sampler_linear();
     let pso = {
@@ -172,15 +172,7 @@ fn main() {
         let font_scale = Scale::uniform(font_size * dpi_factor); // куча похожих переменных!
         // надо уменьшить количество аргументов
         let (vertex_data, index_data) = gfx_cache.yyy(
-            &font,
-            font_scale,
-            iw,
-            &text,
-            &mut encoder,
-            &cache_tex,
-            w,
-            h,
-        );
+            &font, font_scale, iw, &text, &mut encoder, &cache_tex, w, h);
         let (vertex_buffer, slice) = factory.create_vertex_buffer_with_slice(
             &vertex_data, index_data.as_slice());
         let data = pipe::Data {
