@@ -2,15 +2,12 @@
 extern crate glutin;
 extern crate gfx_window_glutin;
 extern crate gfx_device_gl;
-extern crate rusttype;
 extern crate gfx_font_cache;
 
-use rusttype::{FontCollection, Font, Rect, Scale, gpu_cache};
 use glutin::{Api, Event, VirtualKeyCode, GlRequest};
-use gfx::{tex, Device, Factory, Encoder, CommandBuffer};
-use gfx::handle::{Texture, ShaderResourceView};
+use gfx::{Device};
 use gfx::traits::{FactoryExt};
-use gfx_font_cache::{layout_paragraph, pixel_to_gl_rect};
+use gfx_font_cache::{GfxFontCache};
 
 pub type ColorFormat = gfx::format::Srgba8;
 pub type DepthFormat = gfx::format::DepthStencil;
@@ -36,103 +33,6 @@ gfx_pipeline!(
 // (text: &text) -> Vec<([f32; 2], [f32; 2])> {}
 
 // R8_G8_B8_A8 -> gfx::format::SurfaceTyped
-
-// struct GfxFontCache<R: gfx::Resources, F: Factory<R>> {
-struct GfxFontCache<R: gfx::Resources> {
-    // factory: F,
-    cache: gpu_cache::Cache,
-    cache_tex: Texture<R, SurfaceFormat>,
-    cache_tex_view: ShaderResourceView<R, [f32; 4]>,
-    font: Font<'static>,
-    font_scale: Scale,
-}
-
-// impl<R: gfx::Resources, F: Factory<R>> GfxFontCache<R> {
-impl<R: gfx::Resources> GfxFontCache<R> {
-    fn new<F: Factory<R>>(factory: &mut F, font_data: Vec<u8>, font_scale: f32, cache_width: u32) -> GfxFontCache<R> {
-        let font = FontCollection::from_bytes(font_data).into_font().unwrap();
-        let cache_height = cache_width;
-        let (cache_tex, cache_tex_view) = {
-            let w = cache_width as u16;
-            let h = cache_height as u16;
-            let data = &vec![0; (cache_width * cache_width * 4) as usize];
-            let kind = tex::Kind::D2(w, h, tex::AaMode::Single);
-            factory.create_texture_const_u8::<FullFormat>(kind, &[data]).unwrap()
-        };
-        GfxFontCache {
-            // factory: factory,
-            cache: gpu_cache::Cache::new(cache_width, cache_height, 0.1, 0.1),
-            cache_tex: cache_tex,
-            cache_tex_view: cache_tex_view,
-            font: font,
-            font_scale: Scale::uniform(font_scale),
-        }
-    }
-
-    fn update_glyph<C: CommandBuffer<R>>(
-        encoder: &mut Encoder<R, C>,
-        rect: Rect<u32>,
-        data: &[u8],
-        cache_tex: &Texture<R, SurfaceFormat>,
-    ) {
-        let mut new_data = Vec::new();
-        let mut i = 0;
-        while i < data.len() {
-            new_data.push([0, 0, 0, data[i]]);
-            i += 1;
-        }
-        let info = gfx::tex::ImageInfoCommon {
-            xoffset: rect.min.x as u16,
-            yoffset: rect.min.y as u16,
-            zoffset: 0,
-            width: rect.width() as u16,
-            height: rect.height() as u16,
-            depth: 0,
-            format: (),
-            mipmap: 0,
-        };
-        encoder.update_texture::<SurfaceFormat, FullFormat>(cache_tex, None, info, &new_data).unwrap();
-    }
-
-    // лишнего копирования хотелось бы избежать.
-    fn text_to_mesh<
-        F: FnMut([([f32; 2], [f32; 2]); 4], [u16; 6]),
-        C: CommandBuffer<R>,
-    >(
-        &mut self,
-        text: &str,
-        encoder: &mut Encoder<R, C>,
-        cache_tex: &Texture<R, SurfaceFormat>, // вот это точно надо запихать в GfxFontCache
-        w: f32,
-        h: f32,
-        f: &mut F,
-    ) {
-        let glyphs = layout_paragraph(&self.font, self.font_scale, w as u32, text);
-        for glyph in &glyphs {
-            self.cache.queue_glyph(0, glyph.clone());
-        }
-        self.cache.cache_queued(|r, d| {
-            GfxFontCache::update_glyph(encoder, r, d, cache_tex);
-        }).unwrap();
-        let mut i = 0;
-        for g in &glyphs {
-            let (uv, screen_rect) = match self.cache.rect_for(0, g) {
-                Ok(Some(r)) => r,
-                _ => continue,
-            };
-            let r = pixel_to_gl_rect(w, h, screen_rect);
-            let vertices = [
-                ([r.min.x, r.max.y], [uv.min.x, uv.max.y]),
-                ([r.min.x, r.min.y], [uv.min.x, uv.min.y]),
-                ([r.max.x, r.min.y], [uv.max.x, uv.min.y]),
-                ([r.max.x, r.max.y], [uv.max.x, uv.max.y]),
-            ];
-            let indices = [i, i + 1, i + 2, i, i + 2, i + 3];
-            f(vertices, indices);
-            i += 4;
-        }
-    }
-}
 
 fn main() {
     std::env::set_var("RUST_BACKTRACE", "1");
