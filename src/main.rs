@@ -7,7 +7,8 @@ extern crate gfx_font_cache;
 
 use rusttype::{FontCollection, Font, Rect, Scale, gpu_cache};
 use glutin::{Api, Event, VirtualKeyCode, GlRequest};
-use gfx::{tex, Device, Factory};
+use gfx::{tex, Device, Factory, Encoder, CommandBuffer};
+use gfx::handle::{Texture, ShaderResourceView};
 use gfx::traits::{FactoryExt};
 use gfx_font_cache::{layout_paragraph, pixel_to_gl_rect};
 
@@ -40,8 +41,8 @@ gfx_pipeline!(
 struct GfxFontCache<R: gfx::Resources> {
     // factory: F,
     cache: gpu_cache::Cache,
-    cache_tex: gfx::handle::Texture<R, SurfaceFormat>,
-    cache_tex_view: gfx::handle::ShaderResourceView<R, [f32; 4]>,
+    cache_tex: Texture<R, SurfaceFormat>,
+    cache_tex_view: ShaderResourceView<R, [f32; 4]>,
     font: Font<'static>,
     font_scale: Scale,
 }
@@ -68,11 +69,11 @@ impl<R: gfx::Resources> GfxFontCache<R> {
         }
     }
 
-    fn update_glyph<C: gfx::CommandBuffer<R>>(
-        encoder: &mut gfx::Encoder<R, C>,
+    fn update_glyph<C: CommandBuffer<R>>(
+        encoder: &mut Encoder<R, C>,
         rect: Rect<u32>,
         data: &[u8],
-        cache_tex: &gfx::handle::Texture<R, SurfaceFormat>,
+        cache_tex: &Texture<R, SurfaceFormat>,
     ) {
         let mut new_data = Vec::new();
         let mut i = 0;
@@ -95,11 +96,11 @@ impl<R: gfx::Resources> GfxFontCache<R> {
 
     // TODO: плохо, весь этот класс не должен ничего знать про Vertex!
     // ...но и еще одного лишнего копирования хотелось бы избежать.
-    fn text_to_mesh<C: gfx::CommandBuffer<R>>(
+    fn text_to_mesh<C: CommandBuffer<R>>(
         &mut self,
         text: &str,
-        encoder: &mut gfx::Encoder<R, C>,
-        cache_tex: &gfx::handle::Texture<R, SurfaceFormat>, // вот это точно надо запихать в GfxFontCache
+        encoder: &mut Encoder<R, C>,
+        cache_tex: &Texture<R, SurfaceFormat>, // вот это точно надо запихать в GfxFontCache
         w: f32,
         h: f32,
     ) -> (Vec<Vertex>, Vec<u16>) {
