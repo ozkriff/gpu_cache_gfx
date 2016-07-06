@@ -95,7 +95,7 @@ impl<R: gfx::Resources> GfxFontCache<R> {
         iw: u32,
         text: &str,
         encoder: &mut gfx::Encoder<R, C>,
-        cache_tex: &gfx::handle::Texture<R, SurfaceFormat>,
+        cache_tex: &gfx::handle::Texture<R, SurfaceFormat>, // вот это точно надо запихать в GfxFontCache
         w: f32,
         h: f32,
     ) -> (Vec<Vertex>, Vec<u16>) {
@@ -129,8 +129,8 @@ impl<R: gfx::Resources> GfxFontCache<R> {
 fn main() {
     std::env::set_var("RUST_BACKTRACE", "1");
     // TODO: надо затолкать шрифт в GfxFontCache
-    // let font_size = 20.0;
-    let font_size = 24.0;
+    // let font_scale = Scale::uniform(20.0);
+    let font_scale = Scale::uniform(24.0);
     let font_data = include_bytes!("Arial Unicode.ttf").to_vec();
     let gl_version = GlRequest::GlThenGles {
         opengles_version: (2, 0),
@@ -159,19 +159,15 @@ fn main() {
             pipe::new(),
         ).unwrap()
     };
-    let cache_width_pixels = 512; // TODO
-    let dpi_factor = window.hidpi_factor() as u32; // дублирование переменной
-    let cache_width = cache_width_pixels * dpi_factor;
+    let cache_width = 512; // TODO
     let mut gfx_cache = GfxFontCache::new(&mut factory, font_data, cache_width);
     let mut text = "enter some text: ".to_string();
     let cache_tex = gfx_cache.cache_tex.clone(); // попробую вынести клон из структуры
     // если я клонирую, то, может, вообще ее в структуре не хранить?
     loop {
-        let dpi_factor = window.hidpi_factor();
         let (iw, ih) = window.get_inner_size().unwrap();
-        let w = iw as f32 * dpi_factor;
-        let h = ih as f32 * dpi_factor;
-        let font_scale = Scale::uniform(font_size * dpi_factor); // куча похожих переменных!
+        let w = iw as f32;
+        let h = ih as f32;
         // надо уменьшить количество аргументов
         let (vertex_data, index_data) = gfx_cache.text_to_mesh(
             font_scale, iw, &text, &mut encoder, &cache_tex, w, h);
