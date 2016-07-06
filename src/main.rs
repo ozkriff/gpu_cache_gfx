@@ -48,7 +48,7 @@ impl<R: gfx::Resources> GfxFontCache<R> {
         let cache_height = cache_width;
         let (cache_tex, cache_tex_view) = {
             let w = cache_width as u16;
-            let h = cache_width as u16;
+            let h = cache_height as u16;
             let data = &vec![0; (cache_width * cache_width * 4) as usize];
             let kind = tex::Kind::D2(w, h, tex::AaMode::Single);
             factory.create_texture_const_u8::<FullFormat>(kind, &[data]).unwrap()
