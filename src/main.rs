@@ -59,7 +59,7 @@ impl<R: gfx::Resources> GfxFontCache<R> {
         }
     }
 
-    fn xxx<C: gfx::CommandBuffer<R>>(
+    fn update_glyph<C: gfx::CommandBuffer<R>>(
         encoder: &mut gfx::Encoder<R, C>,
         rect: Rect<u32>,
         data: &[u8],
@@ -86,7 +86,7 @@ impl<R: gfx::Resources> GfxFontCache<R> {
 
     // TODO: плохо, весь этот класс не должен ничего знать про Vertex!
     // ...но и еще одного лишнего копирования хотелось бы избежать.
-    fn yyy<C: gfx::CommandBuffer<R>>(
+    fn text_to_mesh<C: gfx::CommandBuffer<R>>(
         &mut self,
         font: &Font,
         font_scale: Scale,
@@ -104,7 +104,7 @@ impl<R: gfx::Resources> GfxFontCache<R> {
             self.cache.queue_glyph(0, glyph.clone());
         }
         self.cache.cache_queued(|r, d| {
-            GfxFontCache::xxx(encoder, r, d, cache_tex);
+            GfxFontCache::update_glyph(encoder, r, d, cache_tex);
         }).unwrap();
         let mut i = 0;
         for g in &glyphs {
@@ -126,6 +126,7 @@ impl<R: gfx::Resources> GfxFontCache<R> {
 
 fn main() {
     std::env::set_var("RUST_BACKTRACE", "1");
+    // TODO: надо затолкать шрифт в GfxFontCache
     // let font_size = 20.0;
     let font_size = 24.0;
     let font_data = include_bytes!("Arial Unicode.ttf");
@@ -171,7 +172,7 @@ fn main() {
         let h = ih as f32 * dpi_factor;
         let font_scale = Scale::uniform(font_size * dpi_factor); // куча похожих переменных!
         // надо уменьшить количество аргументов
-        let (vertex_data, index_data) = gfx_cache.yyy(
+        let (vertex_data, index_data) = gfx_cache.text_to_mesh(
             &font, font_scale, iw, &text, &mut encoder, &cache_tex, w, h);
         let (vertex_buffer, slice) = factory.create_vertex_buffer_with_slice(
             &vertex_data, index_data.as_slice());
