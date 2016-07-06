@@ -94,18 +94,19 @@ impl<R: gfx::Resources> GfxFontCache<R> {
         encoder.update_texture::<SurfaceFormat, FullFormat>(cache_tex, None, info, &new_data).unwrap();
     }
 
-    // TODO: плохо, весь этот класс не должен ничего знать про Vertex!
-    // ...но и еще одного лишнего копирования хотелось бы избежать.
-    fn text_to_mesh<C: CommandBuffer<R>>(
+    // лишнего копирования хотелось бы избежать.
+    fn text_to_mesh<
+        F: FnMut([([f32; 2], [f32; 2]); 4], [u16; 6]),
+        C: CommandBuffer<R>,
+    >(
         &mut self,
         text: &str,
         encoder: &mut Encoder<R, C>,
         cache_tex: &Texture<R, SurfaceFormat>, // вот это точно надо запихать в GfxFontCache
         w: f32,
         h: f32,
-    ) -> (Vec<Vertex>, Vec<u16>) {
-        let mut vertex_data: Vec<Vertex> = Vec::new();
-        let mut index_data: Vec<u16> = Vec::new();
+        f: &mut F,
+    ) {
         let glyphs = layout_paragraph(&self.font, self.font_scale, w as u32, text);
         for glyph in &glyphs {
             self.cache.queue_glyph(0, glyph.clone());
@@ -120,14 +121,16 @@ impl<R: gfx::Resources> GfxFontCache<R> {
                 _ => continue,
             };
             let r = pixel_to_gl_rect(w, h, screen_rect);
-            vertex_data.push(Vertex{pos: [r.min.x, r.max.y], uv: [uv.min.x, uv.max.y]});
-            vertex_data.push(Vertex{pos: [r.min.x,  r.min.y], uv: [uv.min.x, uv.min.y]});
-            vertex_data.push(Vertex{pos: [r.max.x,  r.min.y], uv: [uv.max.x, uv.min.y]});
-            vertex_data.push(Vertex{pos: [r.max.x, r.max.y], uv: [uv.max.x, uv.max.y]});
-            index_data.extend_from_slice(&[i, i + 1, i + 2, i, i + 2, i + 3]);
+            let vertices = [
+                ([r.min.x, r.max.y], [uv.min.x, uv.max.y]),
+                ([r.min.x, r.min.y], [uv.min.x, uv.min.y]),
+                ([r.max.x, r.min.y], [uv.max.x, uv.min.y]),
+                ([r.max.x, r.max.y], [uv.max.x, uv.max.y]),
+            ];
+            let indices = [i, i + 1, i + 2, i, i + 2, i + 3];
+            f(vertices, indices);
             i += 4;
         }
-        (vertex_data, index_data)
     }
 }
 
@@ -163,15 +166,29 @@ fn main() {
     let mut text = "enter some text: ".to_string();
     let cache_tex = gfx_cache.cache_tex.clone(); // попробую вынести клон из структуры
     // если я клонирую, то, может, вообще ее в структуре не хранить?
+    let mut vertex_data: Vec<Vertex> = Vec::new();
+    let mut index_data: Vec<u16> = Vec::new();
     loop {
         let (w, h) = window.get_inner_size().unwrap();
         let w = w as f32;
         let h = h as f32;
-        // надо уменьшить количество аргументов
-        let (vertex_data, index_data) = gfx_cache.text_to_mesh(
-            &text, &mut encoder, &cache_tex, w, h);
+        gfx_cache.text_to_mesh(
+            &text,
+            &mut encoder,
+            &cache_tex,
+            w,
+            h,
+            &mut |vertices, indices| {
+                for v in &vertices {
+                    vertex_data.push(Vertex{pos: v.0, uv: v.1});
+                }
+                index_data.extend_from_slice(&indices);
+            },
+        );
         let (vertex_buffer, slice) = factory.create_vertex_buffer_with_slice(
             &vertex_data, index_data.as_slice());
+        vertex_data.clear();
+        index_data.clear();
         let data = pipe::Data {
             vbuf: vertex_buffer.clone(),
             texture: (gfx_cache.cache_tex_view.clone(), sampler.clone()),
