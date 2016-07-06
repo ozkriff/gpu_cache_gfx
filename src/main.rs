@@ -37,12 +37,14 @@ struct GfxFontCache<R: gfx::Resources> {
     // factory: F,
     cache: gpu_cache::Cache,
     cache_tex: gfx::handle::Texture<R, SurfaceFormat>,
-    cache_tex_view: gfx::handle::ShaderResourceView<R, [f32; 4]>
+    cache_tex_view: gfx::handle::ShaderResourceView<R, [f32; 4]>,
+    font: Font<'static>,
 }
 
 // impl<R: gfx::Resources, F: Factory<R>> GfxFontCache<R> {
 impl<R: gfx::Resources> GfxFontCache<R> {
-    fn new<F: Factory<R>>(factory: &mut F, cache_width: u32) -> GfxFontCache<R> {
+    fn new<F: Factory<R>>(factory: &mut F, font_data: Vec<u8>, cache_width: u32) -> GfxFontCache<R> {
+        let font = FontCollection::from_bytes(font_data).into_font().unwrap();
         let cache_height = cache_width;
         let (cache_tex, cache_tex_view) = {
             let w = cache_width as u16;
@@ -54,8 +56,9 @@ impl<R: gfx::Resources> GfxFontCache<R> {
         GfxFontCache {
             // factory: factory,
             cache: gpu_cache::Cache::new(cache_width, cache_height, 0.1, 0.1),
-            cache_tex: cache_tex, 
-            cache_tex_view: cache_tex_view, 
+            cache_tex: cache_tex,
+            cache_tex_view: cache_tex_view,
+            font: font,
         }
     }
 
@@ -88,7 +91,6 @@ impl<R: gfx::Resources> GfxFontCache<R> {
     // ...но и еще одного лишнего копирования хотелось бы избежать.
     fn text_to_mesh<C: gfx::CommandBuffer<R>>(
         &mut self,
-        font: &Font,
         font_scale: Scale,
         iw: u32,
         text: &str,
@@ -99,7 +101,7 @@ impl<R: gfx::Resources> GfxFontCache<R> {
     ) -> (Vec<Vertex>, Vec<u16>) {
         let mut vertex_data: Vec<Vertex> = Vec::new();
         let mut index_data: Vec<u16> = Vec::new();
-        let glyphs = layout_paragraph(font, font_scale, iw, text);
+        let glyphs = layout_paragraph(&self.font, font_scale, iw, text);
         for glyph in &glyphs {
             self.cache.queue_glyph(0, glyph.clone());
         }
@@ -129,8 +131,7 @@ fn main() {
     // TODO: надо затолкать шрифт в GfxFontCache
     // let font_size = 20.0;
     let font_size = 24.0;
-    let font_data = include_bytes!("Arial Unicode.ttf");
-    let font = FontCollection::from_bytes(font_data as &[u8]).into_font().unwrap();
+    let font_data = include_bytes!("Arial Unicode.ttf").to_vec();
     let gl_version = GlRequest::GlThenGles {
         opengles_version: (2, 0),
         opengl_version: (2, 1),
@@ -161,7 +162,7 @@ fn main() {
     let cache_width_pixels = 512; // TODO
     let dpi_factor = window.hidpi_factor() as u32; // дублирование переменной
     let cache_width = cache_width_pixels * dpi_factor;
-    let mut gfx_cache = GfxFontCache::new(&mut factory, cache_width);
+    let mut gfx_cache = GfxFontCache::new(&mut factory, font_data, cache_width);
     let mut text = "enter some text: ".to_string();
     let cache_tex = gfx_cache.cache_tex.clone(); // попробую вынести клон из структуры
     // если я клонирую, то, может, вообще ее в структуре не хранить?
@@ -173,7 +174,7 @@ fn main() {
         let font_scale = Scale::uniform(font_size * dpi_factor); // куча похожих переменных!
         // надо уменьшить количество аргументов
         let (vertex_data, index_data) = gfx_cache.text_to_mesh(
-            &font, font_scale, iw, &text, &mut encoder, &cache_tex, w, h);
+            font_scale, iw, &text, &mut encoder, &cache_tex, w, h);
         let (vertex_buffer, slice) = factory.create_vertex_buffer_with_slice(
             &vertex_data, index_data.as_slice());
         let data = pipe::Data {
