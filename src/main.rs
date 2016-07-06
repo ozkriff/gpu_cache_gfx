@@ -97,7 +97,6 @@ impl<R: gfx::Resources> GfxFontCache<R> {
     // ...но и еще одного лишнего копирования хотелось бы избежать.
     fn text_to_mesh<C: gfx::CommandBuffer<R>>(
         &mut self,
-        iw: u32,
         text: &str,
         encoder: &mut gfx::Encoder<R, C>,
         cache_tex: &gfx::handle::Texture<R, SurfaceFormat>, // вот это точно надо запихать в GfxFontCache
@@ -106,7 +105,7 @@ impl<R: gfx::Resources> GfxFontCache<R> {
     ) -> (Vec<Vertex>, Vec<u16>) {
         let mut vertex_data: Vec<Vertex> = Vec::new();
         let mut index_data: Vec<u16> = Vec::new();
-        let glyphs = layout_paragraph(&self.font, self.font_scale, iw, text);
+        let glyphs = layout_paragraph(&self.font, self.font_scale, w as u32, text);
         for glyph in &glyphs {
             self.cache.queue_glyph(0, glyph.clone());
         }
@@ -169,12 +168,12 @@ fn main() {
     let cache_tex = gfx_cache.cache_tex.clone(); // попробую вынести клон из структуры
     // если я клонирую, то, может, вообще ее в структуре не хранить?
     loop {
-        let (iw, ih) = window.get_inner_size().unwrap();
-        let w = iw as f32;
-        let h = ih as f32;
+        let (w, h) = window.get_inner_size().unwrap();
+        let w = w as f32;
+        let h = h as f32;
         // надо уменьшить количество аргументов
         let (vertex_data, index_data) = gfx_cache.text_to_mesh(
-            iw, &text, &mut encoder, &cache_tex, w, h);
+            &text, &mut encoder, &cache_tex, w, h);
         let (vertex_buffer, slice) = factory.create_vertex_buffer_with_slice(
             &vertex_data, index_data.as_slice());
         let data = pipe::Data {
