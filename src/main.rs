@@ -16,16 +16,20 @@ pub type DepthFormat = gfx::format::DepthStencil;
 pub type SurfaceFormat = gfx::format::R8_G8_B8_A8;
 pub type FullFormat = (SurfaceFormat, gfx::format::Unorm);
 
-gfx_vertex_struct!( Vertex {
-    pos: [f32; 2] = "a_Pos",
-    uv: [f32; 2] = "a_Uv",
-});
+gfx_vertex_struct!(
+    Vertex {
+        pos: [f32; 2] = "a_Pos",
+        uv: [f32; 2] = "a_Uv",
+    }
+);
 
-gfx_pipeline!( pipe {
-    vbuf: gfx::VertexBuffer<Vertex> = (),
-    texture: gfx::TextureSampler<[f32; 4]> = "t_Tex",
-    out: gfx::BlendTarget<ColorFormat> = ("Target0", gfx::state::MASK_ALL, gfx::preset::blend::ALPHA),
-});
+gfx_pipeline!(
+    pipe {
+        vbuf: gfx::VertexBuffer<Vertex> = (),
+        texture: gfx::TextureSampler<[f32; 4]> = "t_Tex",
+        out: gfx::BlendTarget<ColorFormat> = ("Target0", gfx::state::MASK_ALL, gfx::preset::blend::ALPHA),
+    }
+);
 
 // что я хочу? функцию, в которую я передаю текст, а она возвращает массив с uv и pos геометрией
 // (text: &text) -> Vec<([f32; 2], [f32; 2])> {}
