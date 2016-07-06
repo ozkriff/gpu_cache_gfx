@@ -133,7 +133,6 @@ impl<R: gfx::Resources> GfxFontCache<R> {
 
 fn main() {
     std::env::set_var("RUST_BACKTRACE", "1");
-    // TODO: надо затолкать шрифт в GfxFontCache
     let font_data = include_bytes!("Arial Unicode.ttf").to_vec();
     let gl_version = GlRequest::GlThenGles {
         opengles_version: (2, 0),
@@ -152,15 +151,11 @@ fn main() {
             Api::OpenGl => include_bytes!("shader/pre_gl.glsl").to_vec(),
             Api::OpenGlEs | Api::WebGl => include_bytes!("shader/pre_gles.glsl").to_vec(),
         };
-        let mut vertex_shader = shader_header.clone();
-        vertex_shader.extend_from_slice(include_bytes!("shader/v.glsl"));
-        let mut fragment_shader = shader_header;
-        fragment_shader.extend_from_slice(include_bytes!("shader/f.glsl"));
-        factory.create_pipeline_simple(
-            &vertex_shader,
-            &fragment_shader,
-            pipe::new(),
-        ).unwrap()
+        let mut vs = shader_header.clone();
+        vs.extend_from_slice(include_bytes!("shader/v.glsl"));
+        let mut fs = shader_header;
+        fs.extend_from_slice(include_bytes!("shader/f.glsl"));
+        factory.create_pipeline_simple(&vs, &fs, pipe::new()).unwrap()
     };
     let cache_width = 512; // TODO
     let font_scale = 24.0;
