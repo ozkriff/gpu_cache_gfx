@@ -29,10 +29,19 @@ gfx_pipeline!(
     }
 );
 
-// что я хочу? функцию, в которую я передаю текст, а она возвращает массив с uv и pos геометрией
-// (text: &text) -> Vec<([f32; 2], [f32; 2])> {}
-
 // R8_G8_B8_A8 -> gfx::format::SurfaceTyped
+
+fn load_shaders(window: &glutin::Window) -> (Vec<u8>, Vec<u8>) {
+    let shader_header = match window.get_api() {
+        Api::OpenGl => include_bytes!("shader/pre_gl.glsl").to_vec(),
+        Api::OpenGlEs | Api::WebGl => include_bytes!("shader/pre_gles.glsl").to_vec(),
+    };
+    let mut vs = shader_header.clone();
+    vs.extend_from_slice(include_bytes!("shader/v.glsl"));
+    let mut fs = shader_header;
+    fs.extend_from_slice(include_bytes!("shader/f.glsl"));
+    (vs, fs)
+}
 
 fn main() {
     std::env::set_var("RUST_BACKTRACE", "1");
@@ -49,17 +58,8 @@ fn main() {
     let mut encoder = factory.create_command_buffer().into();
     let clear_color = [1.0, 1.0, 1.0, 1.0];
     let sampler = factory.create_sampler_linear();
-    let pso = {
-        let shader_header = match window.get_api() {
-            Api::OpenGl => include_bytes!("shader/pre_gl.glsl").to_vec(),
-            Api::OpenGlEs | Api::WebGl => include_bytes!("shader/pre_gles.glsl").to_vec(),
-        };
-        let mut vs = shader_header.clone();
-        vs.extend_from_slice(include_bytes!("shader/v.glsl"));
-        let mut fs = shader_header;
-        fs.extend_from_slice(include_bytes!("shader/f.glsl"));
-        factory.create_pipeline_simple(&vs, &fs, pipe::new()).unwrap()
-    };
+    let (vs, fs) = load_shaders(&window);
+    let pso = factory.create_pipeline_simple(&vs, &fs, pipe::new()).unwrap();
     let cache_width = 512; // TODO
     let font_scale = 24.0;
     let mut gfx_cache = GfxFontCache::new(&mut factory, font_data, font_scale, cache_width);
