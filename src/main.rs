@@ -51,9 +51,9 @@ fn main() {
         opengl_version: (2, 1),
     };
     let builder = glutin::WindowBuilder::new()
-        .with_title("RustType GPU cache example [GFX]")
+        .with_title("GfxFontCache example")
         .with_gl(gl_version);
-    let (window, mut device, mut factory, main_color, _main_depth) =
+    let (window, mut device, mut factory, main_color, _) =
         gfx_window_glutin::init::<ColorFormat, DepthFormat>(builder);
     let mut encoder = factory.create_command_buffer().into();
     let clear_color = [1.0, 1.0, 1.0, 1.0];
