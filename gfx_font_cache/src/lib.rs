@@ -8,10 +8,9 @@ extern crate unicode_normalization;
 use unicode_normalization::{UnicodeNormalization};
 use rusttype::{PositionedGlyph, Point, point, vector};
 use rusttype::{FontCollection, Font, Rect, Scale, gpu_cache};
-use gfx::{tex, Factory, Encoder, CommandBuffer};
+use gfx::{tex, Factory, Encoder, CommandBuffer, Resources};
 use gfx::handle::{Texture, ShaderResourceView};
-
-// TODO: УБРАТЬ ОТСЮДА НАФИГ
+use gfx::format::{TextureFormat, SurfaceTyped};
 
 fn pixel_to_gl_point(w: f32, h: f32, screen_point: Point<i32>) -> Point<f32> {
     // TODO: simplify with cgmath
@@ -69,11 +68,12 @@ fn layout_paragraph<'a>(
     result
 }
 
-// struct GfxFontCache<R: gfx::Resources, F: Factory<R>> {
-pub struct GfxFontCache<
-    R: gfx::Resources,
-    T: gfx::format::TextureFormat,
-> {
+pub struct GfxFontCache<R, T>
+where
+    R: Resources,
+    T: TextureFormat,
+    T::Surface: SurfaceTyped<DataType=[u8; 4]>,
+{
     // TODO: убрать пабы
     pub cache: gpu_cache::Cache,
     // черт, может текстуру и правда надо убрать отсюда подальше
@@ -84,9 +84,18 @@ pub struct GfxFontCache<
     pub font_scale: Scale,
 }
 
-// impl<R: gfx::Resources, F: Factory<R>> GfxFontCache<R> {
-impl<R: gfx::Resources, T: gfx::format::TextureFormat> GfxFontCache<R, T> {
-    pub fn new<F: Factory<R>>(factory: &mut F, font_data: Vec<u8>, font_scale: f32, cache_width: u32) -> GfxFontCache<R, T> {
+impl<R, T> GfxFontCache<R, T>
+where
+    R: Resources,
+    T: TextureFormat,
+    T::Surface: SurfaceTyped<DataType=[u8; 4]>,
+{
+    pub fn new<F: Factory<R>>(
+        factory: &mut F,
+        font_data: Vec<u8>,
+        font_scale: f32,
+        cache_width: u32,
+    ) -> GfxFontCache<R, T> {
         let font = FontCollection::from_bytes(font_data).into_font().unwrap();
         let cache_height = cache_width;
         let (cache_tex, cache_tex_view) = {
@@ -128,7 +137,7 @@ impl<R: gfx::Resources, T: gfx::format::TextureFormat> GfxFontCache<R, T> {
             format: (),
             mipmap: 0,
         };
-        encoder.update_texture::<T::Surface, (T::Surface, T::Channel)>(cache_tex, None, info, &new_data).unwrap();
+        encoder.update_texture::<_, T>(cache_tex, None, info, &new_data[..]).unwrap();
     }
 
     // лишнего копирования хотелось бы избежать.
@@ -149,7 +158,7 @@ impl<R: gfx::Resources, T: gfx::format::TextureFormat> GfxFontCache<R, T> {
             self.cache.queue_glyph(0, glyph.clone());
         }
         self.cache.cache_queued(|r, d| {
-            GfxFontCache::update_glyph(encoder, r, d, cache_tex);
+            GfxFontCache::<R, T>::update_glyph(encoder, r, d, cache_tex);
         }).unwrap();
         let mut i = 0;
         for g in &glyphs {

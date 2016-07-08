@@ -62,7 +62,8 @@ fn main() {
     let pso = factory.create_pipeline_simple(&vs, &fs, pipe::new()).unwrap();
     let cache_width = 512; // TODO
     let font_scale = 24.0;
-    let mut gfx_cache = GfxFontCache::new(&mut factory, font_data, font_scale, cache_width);
+    let mut gfx_cache = GfxFontCache::<_, FullFormat>::new(
+        &mut factory, font_data, font_scale, cache_width);
     let mut text = "enter some text: ".to_string();
     let cache_tex = gfx_cache.cache_tex.clone(); // попробую вынести клон из структуры
     // если я клонирую, то, может, вообще ее в структуре не хранить?
