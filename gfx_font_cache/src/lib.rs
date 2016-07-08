@@ -12,8 +12,6 @@ use gfx::{tex, Factory, Encoder, CommandBuffer};
 use gfx::handle::{Texture, ShaderResourceView};
 
 // TODO: УБРАТЬ ОТСЮДА НАФИГ
-pub type SurfaceFormat = gfx::format::R8_G8_B8_A8; // TODO: ПЛОХО!
-pub type FullFormat = (SurfaceFormat, gfx::format::Unorm);
 
 fn pixel_to_gl_point(w: f32, h: f32, screen_point: Point<i32>) -> Point<f32> {
     // TODO: simplify with cgmath
@@ -72,20 +70,23 @@ fn layout_paragraph<'a>(
 }
 
 // struct GfxFontCache<R: gfx::Resources, F: Factory<R>> {
-pub struct GfxFontCache<R: gfx::Resources> {
+pub struct GfxFontCache<
+    R: gfx::Resources,
+    T: gfx::format::TextureFormat,
+> {
     // TODO: убрать пабы
     pub cache: gpu_cache::Cache,
     // черт, может текстуру и правда надо убрать отсюда подальше
     // возможно, можно ее создавать тут, но сразу отдавать пользователю
-    pub cache_tex: Texture<R, SurfaceFormat>,
-    pub cache_tex_view: ShaderResourceView<R, [f32; 4]>,
+    pub cache_tex: Texture<R, T::Surface>,
+    pub cache_tex_view: ShaderResourceView<R, T::View>,
     pub font: Font<'static>,
     pub font_scale: Scale,
 }
 
 // impl<R: gfx::Resources, F: Factory<R>> GfxFontCache<R> {
-impl<R: gfx::Resources> GfxFontCache<R> {
-    pub fn new<F: Factory<R>>(factory: &mut F, font_data: Vec<u8>, font_scale: f32, cache_width: u32) -> GfxFontCache<R> {
+impl<R: gfx::Resources, T: gfx::format::TextureFormat> GfxFontCache<R, T> {
+    pub fn new<F: Factory<R>>(factory: &mut F, font_data: Vec<u8>, font_scale: f32, cache_width: u32) -> GfxFontCache<R, T> {
         let font = FontCollection::from_bytes(font_data).into_font().unwrap();
         let cache_height = cache_width;
         let (cache_tex, cache_tex_view) = {
@@ -93,7 +94,7 @@ impl<R: gfx::Resources> GfxFontCache<R> {
             let h = cache_height as u16;
             let data = &vec![0; (cache_width * cache_width * 4) as usize];
             let kind = tex::Kind::D2(w, h, tex::AaMode::Single);
-            factory.create_texture_const_u8::<FullFormat>(kind, &[data]).unwrap()
+            factory.create_texture_const_u8::<T>(kind, &[data]).unwrap()
         };
         GfxFontCache {
             // factory: factory,
@@ -109,7 +110,7 @@ impl<R: gfx::Resources> GfxFontCache<R> {
         encoder: &mut Encoder<R, C>,
         rect: Rect<u32>,
         data: &[u8],
-        cache_tex: &Texture<R, SurfaceFormat>,
+        cache_tex: &Texture<R, T::Surface>,
     ) {
         let mut new_data = Vec::new();
         let mut i = 0;
@@ -127,7 +128,7 @@ impl<R: gfx::Resources> GfxFontCache<R> {
             format: (),
             mipmap: 0,
         };
-        encoder.update_texture::<SurfaceFormat, FullFormat>(cache_tex, None, info, &new_data).unwrap();
+        encoder.update_texture::<T::Surface, (T::Surface, T::Channel)>(cache_tex, None, info, &new_data).unwrap();
     }
 
     // лишнего копирования хотелось бы избежать.
@@ -138,7 +139,7 @@ impl<R: gfx::Resources> GfxFontCache<R> {
         &mut self,
         text: &str,
         encoder: &mut Encoder<R, C>,
-        cache_tex: &Texture<R, SurfaceFormat>, // вот это точно надо запихать в GfxFontCache
+        cache_tex: &Texture<R, T::Surface>, // вот это точно надо запихать в GfxFontCache
         w: f32,
         h: f32,
         f: &mut F,
