@@ -79,6 +79,9 @@ fn main() {
             w,
             h,
             &mut |vertices, indices| {
+                // надо научиться не перестраивать сетку каждый кадр,
+                // если ничего не менялось.
+                // нужен какой-то флаг о грязности кэша
                 for v in &vertices {
                     vertex_data.push(Vertex{pos: v.0, uv: v.1});
                 }
