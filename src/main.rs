@@ -53,7 +53,7 @@ fn main() {
     let builder = glutin::WindowBuilder::new()
         .with_title("GfxFontCache example")
         .with_gl(gl_version);
-    let (window, mut device, mut factory, main_color, _) =
+    let (window, mut device, mut factory, mut main_color, mut main_depth) =
         gfx_window_glutin::init::<ColorFormat, DepthFormat>(builder);
     let mut encoder = factory.create_command_buffer().into();
     let clear_color = [1.0, 1.0, 1.0, 1.0];
@@ -101,8 +101,11 @@ fn main() {
         device.cleanup();
         for event in window.poll_events() {
             match event {
-                Event::KeyboardInput(_, _, Some(VirtualKeyCode::Escape)) |
+                Event::KeyboardInput(_, _, Some(VirtualKeyCode::Escape)) => return,
                 Event::Closed => return,
+                Event::Resized(..) => {
+                    gfx_window_glutin::update_views(&window, &mut main_color, &mut main_depth);
+                },
                 Event::ReceivedCharacter(c) => if c != '\u{7f}' && c != '\u{8}' {
                     text.push(c);
                 },
