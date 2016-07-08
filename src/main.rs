@@ -66,8 +66,8 @@ fn main() {
     let mut text = "enter some text: ".to_string();
     let cache_tex = gfx_cache.cache_tex.clone(); // попробую вынести клон из структуры
     // если я клонирую, то, может, вообще ее в структуре не хранить?
-    let mut vertex_data: Vec<Vertex> = Vec::new();
-    let mut index_data: Vec<u16> = Vec::new();
+    let mut vertex_data = Vec::new();
+    let mut index_data = Vec::new();
     loop {
         let (w, h) = window.get_inner_size().unwrap();
         let w = w as f32;
