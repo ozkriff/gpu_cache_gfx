@@ -75,13 +75,13 @@ where
     T::Surface: SurfaceTyped<DataType=[u8; 4]>,
 {
     // TODO: убрать пабы
-    pub cache: gpu_cache::Cache,
+    cache: gpu_cache::Cache,
     // черт, может текстуру и правда надо убрать отсюда подальше
     // возможно, можно ее создавать тут, но сразу отдавать пользователю
     pub cache_tex: Texture<R, T::Surface>,
     pub cache_tex_view: ShaderResourceView<R, T::View>,
-    pub font: Font<'static>,
-    pub font_scale: Scale,
+    font: Font<'static>,
+    font_scale: Scale,
 }
 
 impl<R, T> GfxFontCache<R, T>
@@ -115,7 +115,7 @@ where
         }
     }
 
-    pub fn update_glyph<C: CommandBuffer<R>>(
+    fn update_glyph<C: CommandBuffer<R>>(
         encoder: &mut Encoder<R, C>,
         rect: Rect<u32>,
         data: &[u8],
